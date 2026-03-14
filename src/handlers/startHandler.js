@@ -1,27 +1,25 @@
 const mainMenu = require("../keyboards/mainMenu");
 const { getOrCreateUser } = require("../services/userService");
+const { getUserRole } = require("../services/roleService");
 
 async function startHandler(ctx) {
-    const isAdmin = String(ctx.from.id) === String(process.env.ADMIN_ID);
-
     getOrCreateUser(ctx.from.id, ctx.from.first_name || "");
 
-    let text = `🎓 *Assalomu alaykum!*\n\n`;
-    text += `Men *matematika fakulteti dars jadvali botiman*.\n\n`;
-    text += `Quyidagilardan birini tanlang:\n`;
-    text += `• 📚 Jadvalni ko‘rish\n`;
-    text += `• 👨‍🏫 O‘qituvchini qidirish\n`;
-    text += `• 📅 Bugungi jadval\n`;
-    text += `• 🗓 Haftalik jadval\n\n`;
-    text += `💾 Bir marta guruh tanlasangiz, bot uni eslab qoladi.\n\n`;
+    const role = getUserRole(ctx.from.id);
 
-    if (isAdmin) {
-        text += `✅ Siz adminsiz: /admin`;
+    let text = `🎓 *Assalomu alaykum!*\n\n`;
+    text += `Men *universitet dars jadvali botiman*.\n\n`;
+    text += `Kerakli bo‘limni tanlang.\n\n`;
+
+    if (role === "superadmin") {
+        text += `👑 Siz *Super Admin*siz.\n`;
+    } else if (role === "admin") {
+        text += `⚙️ Siz *Admin*siz.\n`;
     }
 
     await ctx.reply(text, {
         parse_mode: "Markdown",
-        ...mainMenu(isAdmin)
+        ...mainMenu(role)
     });
 }
 

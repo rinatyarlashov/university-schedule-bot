@@ -1,14 +1,24 @@
 require("dotenv").config();
 const { Telegraf } = require("telegraf");
 const http = require("http");
+
 const startHandler = require("./handlers/startHandler");
+
 const {
     adminPanel,
+    superAdminPanel,
     handleExcelUpload,
     sendExcelTemplate,
-    askBroadcastMessage,
-    handleBroadcastText,
+    askFacultyAnnouncement,
+    askGlobalBroadcast,
+    handleFacultyBroadcastText,
+    handleGlobalBroadcastText,
     showStats,
+    showAdminsList,
+    startAddAdmin,
+    startRemoveAdmin,
+    handleAdminAddRemoveText,
+    handleAdminCallback,
     isAdmin
 } = require("./handlers/adminHandler");
 
@@ -39,11 +49,17 @@ bot.hears("🗓 Haftalik jadval", handleWeeklySchedule);
 bot.hears("ℹ️ Yordam", handleHelp);
 
 bot.hears("⚙️ Admin panel", adminPanel);
-bot.hears("📢 Xabar yuborish", askBroadcastMessage);
-bot.hears("📊 Statistika", showStats);
+bot.hears("👑 Super Admin panel", superAdminPanel);
+
+bot.hears("📢 Fakultet e'loni", askFacultyAnnouncement);
+bot.hears("📢 Global xabar", askGlobalBroadcast);
+bot.hears("📊 To‘liq statistika", showStats);
+bot.hears("👥 Adminlar ro‘yxati", showAdminsList);
+bot.hears("➕ Admin qo‘shish", startAddAdmin);
+bot.hears("➖ Admin o‘chirish", startRemoveAdmin);
 
 bot.hears("📤 Excel yuklash", async (ctx) => {
-    if (!isAdmin(ctx)) return ctx.reply("Siz admin emassiz.");
+    if (!isAdmin(ctx)) return ctx.reply("❌ Siz admin emassiz.");
     await ctx.reply("Excel faylni shu yerga yuboring.");
 });
 
@@ -53,8 +69,14 @@ bot.hears("🏠 Bosh menyu", startHandler);
 bot.on("document", handleExcelUpload);
 
 bot.on("text", async (ctx, next) => {
-    const handledBroadcast = await handleBroadcastText(ctx);
-    if (handledBroadcast) return;
+    const handledAdminManage = await handleAdminAddRemoveText(ctx);
+    if (handledAdminManage) return;
+
+    const handledFacultyBroadcast = await handleFacultyBroadcastText(ctx);
+    if (handledFacultyBroadcast) return;
+
+    const handledGlobalBroadcast = await handleGlobalBroadcastText(ctx);
+    if (handledGlobalBroadcast) return;
 
     const handledTeacherSearch = await handleTeacherSearchText(ctx);
     if (handledTeacherSearch) return;
@@ -62,12 +84,16 @@ bot.on("text", async (ctx, next) => {
     return next();
 });
 
-bot.on("callback_query", handleCallback);
+bot.on("callback_query", async (ctx) => {
+    const handledAdmin = await handleAdminCallback(ctx);
+    if (handledAdmin) return;
+
+    return handleCallback(ctx);
+});
 
 bot.launch();
 console.log("Bot ishga tushdi");
 
-// Render uchun health server
 const PORT = process.env.PORT || 10000;
 
 http

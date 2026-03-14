@@ -54,3 +54,16 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY(direction_id) REFERENCES directions(id),
     FOREIGN KEY(group_id) REFERENCES groups(id)
     );
+CREATE TABLE IF NOT EXISTS roles (
+                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                     telegram_id INTEGER UNIQUE NOT NULL,
+                                     role TEXT NOT NULL DEFAULT 'student'
+);
+
+CREATE TABLE IF NOT EXISTS admin_faculties (
+                                               id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                               telegram_id INTEGER NOT NULL,
+                                               faculty_id INTEGER NOT NULL,
+                                               UNIQUE(telegram_id, faculty_id),
+    FOREIGN KEY(faculty_id) REFERENCES faculties(id)
+    );

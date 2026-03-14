@@ -3,7 +3,7 @@ const { Markup } = require("telegraf");
 function adminMenu() {
     return Markup.keyboard([
         ["📤 Excel yuklash", "📥 Excel template"],
-        ["📢 Xabar yuborish", "📊 Statistika"],
+        ["📢 Fakultet e'loni"],
         ["🏠 Bosh menyu"]
     ]).resize();
 }
