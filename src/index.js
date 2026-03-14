@@ -1,6 +1,6 @@
 require("dotenv").config();
 const { Telegraf } = require("telegraf");
-
+const http = require("http");
 const startHandler = require("./handlers/startHandler");
 const {
     adminPanel,
@@ -66,3 +66,15 @@ bot.on("callback_query", handleCallback);
 
 bot.launch();
 console.log("Bot ishga tushdi");
+
+// Render uchun health server
+const PORT = process.env.PORT || 10000;
+
+http
+    .createServer((req, res) => {
+        res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("University bot ishlayapti");
+    })
+    .listen(PORT, "0.0.0.0", () => {
+        console.log(`Health server portda ishga tushdi: ${PORT}`);
+    });
