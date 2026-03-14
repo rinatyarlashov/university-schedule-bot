@@ -3,7 +3,15 @@ const { Telegraf } = require("telegraf");
 const http = require("http");
 
 const startHandler = require("./handlers/startHandler");
-
+const {
+    startFacultyCreate,
+    startDirectionCreate,
+    startGroupCreate,
+    startAdminAssign,
+    startAdminRemove,
+    handleSuperAdminCrudCallback,
+    handleSuperAdminCrudText
+} = require("./handlers/superAdminCrudHandler");
 const {
     adminPanel,
     superAdminPanel,
@@ -38,7 +46,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 bot.start(startHandler);
 bot.command("admin", adminPanel);
-
+bot.command("superadmin", superAdminPanel);
 bot.hears("👥 Guruhingizni tanlang", handleChooseMyGroup);
 bot.hears("🔁 Guruhni almashtirish", handleChooseMyGroup);
 bot.hears("👤 Mening guruhim", handleMyGroup);
@@ -47,7 +55,11 @@ bot.hears("👨‍🏫 O‘qituvchini qidirish", handleTeacherScheduleStart);
 bot.hears("📅 Bugungi jadval", handleTodaySchedule);
 bot.hears("🗓 Haftalik jadval", handleWeeklySchedule);
 bot.hears("ℹ️ Yordam", handleHelp);
-
+bot.hears("🏛 Fakultet qo‘shish", startFacultyCreate);
+bot.hears("📘 Yo‘nalish qo‘shish", startDirectionCreate);
+bot.hears("👥 Guruh qo‘shish", startGroupCreate);
+bot.hears("➕ Admin tayinlash", startAdminAssign);
+bot.hears("➖ Adminni olish", startAdminRemove);
 bot.hears("⚙️ Admin panel", adminPanel);
 bot.hears("👑 Super Admin panel", superAdminPanel);
 
@@ -69,6 +81,9 @@ bot.hears("🏠 Bosh menyu", startHandler);
 bot.on("document", handleExcelUpload);
 
 bot.on("text", async (ctx, next) => {
+    const handledSuperAdminCrud = await handleSuperAdminCrudText(ctx);
+    if (handledSuperAdminCrud) return;
+
     const handledAdminManage = await handleAdminAddRemoveText(ctx);
     if (handledAdminManage) return;
 
@@ -85,6 +100,9 @@ bot.on("text", async (ctx, next) => {
 });
 
 bot.on("callback_query", async (ctx) => {
+    const handledSuperCrud = await handleSuperAdminCrudCallback(ctx);
+    if (handledSuperCrud) return;
+
     const handledAdmin = await handleAdminCallback(ctx);
     if (handledAdmin) return;
 
