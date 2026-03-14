@@ -16,7 +16,23 @@ function getDirectionsByFaculty(facultyId) {
     `).all(facultyId);
 }
 
+function deleteDirection(directionId) {
+    const groups = db.prepare(`
+        SELECT id
+        FROM groups
+        WHERE direction_id = ?
+    `).all(directionId);
+
+    for (const group of groups) {
+        db.prepare(`DELETE FROM schedules WHERE group_id = ?`).run(group.id);
+        db.prepare(`DELETE FROM groups WHERE id = ?`).run(group.id);
+    }
+
+    db.prepare(`DELETE FROM directions WHERE id = ?`).run(directionId);
+}
+
 module.exports = {
     createDirection,
-    getDirectionsByFaculty
+    getDirectionsByFaculty,
+    deleteDirection
 };

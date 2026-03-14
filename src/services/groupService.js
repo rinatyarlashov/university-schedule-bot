@@ -7,6 +7,12 @@ function createGroup(directionId, course, groupName) {
     `).run(directionId, course, groupName);
 }
 
+function deleteGroup(groupId) {
+    db.prepare(`DELETE FROM schedules WHERE group_id = ?`).run(groupId);
+    db.prepare(`DELETE FROM groups WHERE id = ?`).run(groupId);
+}
+
 module.exports = {
-    createGroup
+    createGroup,
+    deleteGroup
 };

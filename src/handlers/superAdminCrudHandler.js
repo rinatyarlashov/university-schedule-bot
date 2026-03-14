@@ -1,9 +1,32 @@
 const { Markup } = require("telegraf");
-const { isSuperAdmin, assignAdminToFaculty, removeAdminFromFaculty } = require("../services/roleService");
-const { createFaculty, getAllFaculties } = require("../services/facultyService");
-const { createDirection, getDirectionsByFaculty } = require("../services/directionService");
-const { createGroup } = require("../services/groupService");
+const db = require("../config/db");
 
+const {
+    isSuperAdmin,
+    assignAdminToFaculty,
+    removeAdminFromFaculty
+} = require("../services/roleService");
+
+const {
+    createFaculty,
+    getAllFaculties,
+    deleteFaculty
+} = require("../services/facultyService");
+
+const {
+    createDirection,
+    getDirectionsByFaculty,
+    deleteDirection
+} = require("../services/directionService");
+
+const {
+    createGroup,
+    deleteGroup
+} = require("../services/groupService");
+
+// =========================
+// TEMP STATE
+// =========================
 const state = new Map();
 
 function setState(userId, data) {
@@ -18,55 +41,130 @@ function clearState(userId) {
     state.delete(userId);
 }
 
+// =========================
+// START ACTIONS
+// =========================
 async function startFacultyCreate(ctx) {
-    if (!isSuperAdmin(ctx)) return ctx.reply("❌ Siz super admin emassiz.");
+    if (!isSuperAdmin(ctx)) {
+        return ctx.reply("❌ Siz super admin emassiz.");
+    }
+
     setState(ctx.from.id, { step: "faculty_name" });
     await ctx.reply("🏛 Fakultet nomini yuboring:");
 }
 
-async function startDirectionCreate(ctx) {
-    if (!isSuperAdmin(ctx)) return ctx.reply("❌ Siz super admin emassiz.");
+async function startFacultyDelete(ctx) {
+    if (!isSuperAdmin(ctx)) {
+        return ctx.reply("❌ Siz super admin emassiz.");
+    }
 
     const faculties = getAllFaculties();
+
+    if (!faculties.length) {
+        return ctx.reply("❌ Fakultetlar topilmadi.");
+    }
+
+    const buttons = faculties.map((f) => [
+        Markup.button.callback(`🗑 ${f.name}`, `delete_faculty_${f.id}`)
+    ]);
+
+    await ctx.reply("🗑 O‘chiriladigan fakultetni tanlang:", {
+        ...Markup.inlineKeyboard(buttons)
+    });
+}
+
+async function startDirectionCreate(ctx) {
+    if (!isSuperAdmin(ctx)) {
+        return ctx.reply("❌ Siz super admin emassiz.");
+    }
+
+    const faculties = getAllFaculties();
+
     if (!faculties.length) {
         return ctx.reply("❌ Avval fakultet qo‘shing.");
     }
 
-    const buttons = faculties.map(f => [
+    const buttons = faculties.map((f) => [
         Markup.button.callback(`🏛 ${f.name}`, `create_direction_faculty_${f.id}`)
     ]);
 
-    await ctx.reply("📘 Yo‘nalish uchun fakultetni tanlang:", {
+    await ctx.reply("📘 Yo‘nalish qo‘shish uchun fakultetni tanlang:", {
+        ...Markup.inlineKeyboard(buttons)
+    });
+}
+
+async function startDirectionDelete(ctx) {
+    if (!isSuperAdmin(ctx)) {
+        return ctx.reply("❌ Siz super admin emassiz.");
+    }
+
+    const faculties = getAllFaculties();
+
+    if (!faculties.length) {
+        return ctx.reply("❌ Fakultetlar topilmadi.");
+    }
+
+    const buttons = faculties.map((f) => [
+        Markup.button.callback(`🏛 ${f.name}`, `delete_direction_faculty_${f.id}`)
+    ]);
+
+    await ctx.reply("🗑 Yo‘nalish o‘chirish uchun fakultetni tanlang:", {
         ...Markup.inlineKeyboard(buttons)
     });
 }
 
 async function startGroupCreate(ctx) {
-    if (!isSuperAdmin(ctx)) return ctx.reply("❌ Siz super admin emassiz.");
+    if (!isSuperAdmin(ctx)) {
+        return ctx.reply("❌ Siz super admin emassiz.");
+    }
 
     const faculties = getAllFaculties();
+
     if (!faculties.length) {
         return ctx.reply("❌ Avval fakultet qo‘shing.");
     }
 
-    const buttons = faculties.map(f => [
+    const buttons = faculties.map((f) => [
         Markup.button.callback(`🏛 ${f.name}`, `create_group_faculty_${f.id}`)
     ]);
 
-    await ctx.reply("👥 Guruh uchun fakultetni tanlang:", {
+    await ctx.reply("👥 Guruh qo‘shish uchun fakultetni tanlang:", {
+        ...Markup.inlineKeyboard(buttons)
+    });
+}
+
+async function startGroupDelete(ctx) {
+    if (!isSuperAdmin(ctx)) {
+        return ctx.reply("❌ Siz super admin emassiz.");
+    }
+
+    const faculties = getAllFaculties();
+
+    if (!faculties.length) {
+        return ctx.reply("❌ Fakultetlar topilmadi.");
+    }
+
+    const buttons = faculties.map((f) => [
+        Markup.button.callback(`🏛 ${f.name}`, `delete_group_faculty_${f.id}`)
+    ]);
+
+    await ctx.reply("🗑 Guruh o‘chirish uchun fakultetni tanlang:", {
         ...Markup.inlineKeyboard(buttons)
     });
 }
 
 async function startAdminAssign(ctx) {
-    if (!isSuperAdmin(ctx)) return ctx.reply("❌ Siz super admin emassiz.");
+    if (!isSuperAdmin(ctx)) {
+        return ctx.reply("❌ Siz super admin emassiz.");
+    }
 
     const faculties = getAllFaculties();
+
     if (!faculties.length) {
         return ctx.reply("❌ Avval fakultet qo‘shing.");
     }
 
-    const buttons = faculties.map(f => [
+    const buttons = faculties.map((f) => [
         Markup.button.callback(`🏛 ${f.name}`, `assign_admin_${f.id}`)
     ]);
 
@@ -76,14 +174,17 @@ async function startAdminAssign(ctx) {
 }
 
 async function startAdminRemove(ctx) {
-    if (!isSuperAdmin(ctx)) return ctx.reply("❌ Siz super admin emassiz.");
-
-    const faculties = getAllFaculties();
-    if (!faculties.length) {
-        return ctx.reply("❌ Fakultet topilmadi.");
+    if (!isSuperAdmin(ctx)) {
+        return ctx.reply("❌ Siz super admin emassiz.");
     }
 
-    const buttons = faculties.map(f => [
+    const faculties = getAllFaculties();
+
+    if (!faculties.length) {
+        return ctx.reply("❌ Fakultetlar topilmadi.");
+    }
+
+    const buttons = faculties.map((f) => [
         Markup.button.callback(`🏛 ${f.name}`, `remove_admin_${f.id}`)
     ]);
 
@@ -92,22 +193,29 @@ async function startAdminRemove(ctx) {
     });
 }
 
+// =========================
+// CALLBACK HANDLER
+// =========================
 async function handleSuperAdminCrudCallback(ctx) {
     if (!isSuperAdmin(ctx)) return false;
 
     const data = ctx.callbackQuery.data;
 
+    // -------- YO‘NALISH QO‘SHISH --------
     if (data.startsWith("create_direction_faculty_")) {
         const facultyId = Number(data.split("_").pop());
+
         setState(ctx.from.id, {
             step: "direction_name",
             facultyId
         });
+
         await ctx.answerCbQuery();
         await ctx.reply("📘 Yo‘nalish nomini yuboring:");
         return true;
     }
 
+    // -------- GURUH QO‘SHISH: FAKULTET TANLASH --------
     if (data.startsWith("create_group_faculty_")) {
         const facultyId = Number(data.split("_").pop());
         const directions = getDirectionsByFaculty(facultyId);
@@ -118,11 +226,118 @@ async function handleSuperAdminCrudCallback(ctx) {
             return true;
         }
 
-        const buttons = directions.map(d => [
+        const buttons = directions.map((d) => [
             Markup.button.callback(`📘 ${d.name}`, `create_group_direction_${d.id}`)
         ]);
 
-        setState(ctx.from.id, { step: "group_direction_pick", facultyId });
+        await ctx.answerCbQuery();
+        await ctx.reply("📘 Yo‘nalishni tanlang:", {
+            ...Markup.inlineKeyboard(buttons)
+        });
+
+        return true;
+    }
+
+    // -------- GURUH QO‘SHISH: YO‘NALISH TANLASH --------
+    if (data.startsWith("create_group_direction_")) {
+        const directionId = Number(data.split("_").pop());
+
+        setState(ctx.from.id, {
+            step: "group_course",
+            directionId
+        });
+
+        await ctx.answerCbQuery();
+        await ctx.reply("🎓 Kurs raqamini yuboring:");
+        return true;
+    }
+
+    // -------- ADMIN TAYINLASH --------
+    if (data.startsWith("assign_admin_")) {
+        const facultyId = Number(data.split("_").pop());
+
+        setState(ctx.from.id, {
+            step: "assign_admin_id",
+            facultyId
+        });
+
+        await ctx.answerCbQuery();
+        await ctx.reply("👤 Admin qilinadigan Telegram ID ni yuboring:");
+        return true;
+    }
+
+    // -------- ADMINNI OLISH --------
+    if (data.startsWith("remove_admin_")) {
+        const facultyId = Number(data.split("_").pop());
+
+        setState(ctx.from.id, {
+            step: "remove_admin_id",
+            facultyId
+        });
+
+        await ctx.answerCbQuery();
+        await ctx.reply("👤 Adminlikdan olinadigan Telegram ID ni yuboring:");
+        return true;
+    }
+
+    // -------- FAKULTETNI O‘CHIRISH --------
+    if (data.startsWith("delete_faculty_")) {
+        const facultyId = Number(data.split("_").pop());
+
+        deleteFaculty(facultyId);
+
+        await ctx.answerCbQuery("Fakultet o‘chirildi");
+        await ctx.editMessageText("✅ Fakultet o‘chirildi.");
+        return true;
+    }
+
+    // -------- YO‘NALISHNI O‘CHIRISH: FAKULTET TANLASH --------
+    if (data.startsWith("delete_direction_faculty_")) {
+        const facultyId = Number(data.split("_").pop());
+        const directions = getDirectionsByFaculty(facultyId);
+
+        if (!directions.length) {
+            await ctx.answerCbQuery();
+            await ctx.reply("❌ Bu fakultetda yo‘nalish yo‘q.");
+            return true;
+        }
+
+        const buttons = directions.map((d) => [
+            Markup.button.callback(`🗑 ${d.name}`, `delete_direction_${d.id}`)
+        ]);
+
+        await ctx.answerCbQuery();
+        await ctx.reply("🗑 O‘chiriladigan yo‘nalishni tanlang:", {
+            ...Markup.inlineKeyboard(buttons)
+        });
+        return true;
+    }
+
+    // -------- YO‘NALISHNI O‘CHIRISH --------
+    if (data.startsWith("delete_direction_")) {
+        const directionId = Number(data.split("_").pop());
+
+        deleteDirection(directionId);
+
+        await ctx.answerCbQuery("Yo‘nalish o‘chirildi");
+        await ctx.editMessageText("✅ Yo‘nalish o‘chirildi.");
+        return true;
+    }
+
+    // -------- GURUHNI O‘CHIRISH: FAKULTET TANLASH --------
+    if (data.startsWith("delete_group_faculty_")) {
+        const facultyId = Number(data.split("_").pop());
+        const directions = getDirectionsByFaculty(facultyId);
+
+        if (!directions.length) {
+            await ctx.answerCbQuery();
+            await ctx.reply("❌ Bu fakultetda yo‘nalish yo‘q.");
+            return true;
+        }
+
+        const buttons = directions.map((d) => [
+            Markup.button.callback(`📘 ${d.name}`, `delete_group_direction_${d.id}`)
+        ]);
 
         await ctx.answerCbQuery();
         await ctx.reply("📘 Yo‘nalishni tanlang:", {
@@ -131,42 +346,37 @@ async function handleSuperAdminCrudCallback(ctx) {
         return true;
     }
 
-    if (data.startsWith("create_group_direction_")) {
+    // -------- GURUHNI O‘CHIRISH: YO‘NALISH TANLASH --------
+    if (data.startsWith("delete_group_direction_")) {
         const directionId = Number(data.split("_").pop());
+
         setState(ctx.from.id, {
-            step: "group_course",
+            step: "delete_group_course",
             directionId
         });
+
         await ctx.answerCbQuery();
-        await ctx.reply("🎓 Kurs raqamini yuboring:");
+        await ctx.reply("🎓 O‘chirish uchun kurs raqamini yuboring:");
         return true;
     }
 
-    if (data.startsWith("assign_admin_")) {
-        const facultyId = Number(data.split("_").pop());
-        setState(ctx.from.id, {
-            step: "assign_admin_id",
-            facultyId
-        });
-        await ctx.answerCbQuery();
-        await ctx.reply("👤 Admin qilinadigan Telegram ID ni yuboring:");
-        return true;
-    }
+    // -------- GURUHNI O‘CHIRISH: GURUH TANLASH --------
+    if (data.startsWith("delete_group_")) {
+        const groupId = Number(data.split("_").pop());
 
-    if (data.startsWith("remove_admin_")) {
-        const facultyId = Number(data.split("_").pop());
-        setState(ctx.from.id, {
-            step: "remove_admin_id",
-            facultyId
-        });
-        await ctx.answerCbQuery();
-        await ctx.reply("👤 Adminlikdan olinadigan Telegram ID ni yuboring:");
+        deleteGroup(groupId);
+
+        await ctx.answerCbQuery("Guruh o‘chirildi");
+        await ctx.editMessageText("✅ Guruh o‘chirildi.");
         return true;
     }
 
     return false;
 }
 
+// =========================
+// TEXT HANDLER
+// =========================
 async function handleSuperAdminCrudText(ctx) {
     if (!isSuperAdmin(ctx)) return false;
 
@@ -175,20 +385,45 @@ async function handleSuperAdminCrudText(ctx) {
 
     const text = (ctx.message.text || "").trim();
 
+    // -------- FAKULTET NOMI --------
     if (current.step === "faculty_name") {
-        createFaculty(text);
-        clearState(ctx.from.id);
-        await ctx.reply(`✅ Fakultet qo‘shildi: ${text}`);
+        if (!text) {
+            await ctx.reply("❌ Fakultet nomini yuboring.");
+            return true;
+        }
+
+        try {
+            createFaculty(text);
+            clearState(ctx.from.id);
+            await ctx.reply(`✅ Fakultet qo‘shildi: ${text}`);
+        } catch (e) {
+            clearState(ctx.from.id);
+            await ctx.reply("❌ Fakultet qo‘shishda xatolik. Balki bu fakultet oldin mavjuddir.");
+        }
+
         return true;
     }
 
+    // -------- YO‘NALISH NOMI --------
     if (current.step === "direction_name") {
-        createDirection(current.facultyId, text);
-        clearState(ctx.from.id);
-        await ctx.reply(`✅ Yo‘nalish qo‘shildi: ${text}`);
+        if (!text) {
+            await ctx.reply("❌ Yo‘nalish nomini yuboring.");
+            return true;
+        }
+
+        try {
+            createDirection(current.facultyId, text);
+            clearState(ctx.from.id);
+            await ctx.reply(`✅ Yo‘nalish qo‘shildi: ${text}`);
+        } catch (e) {
+            clearState(ctx.from.id);
+            await ctx.reply("❌ Yo‘nalish qo‘shishda xatolik.");
+        }
+
         return true;
     }
 
+    // -------- GURUH QO‘SHISH: KURS --------
     if (current.step === "group_course") {
         if (!/^\d+$/.test(text)) {
             await ctx.reply("❌ Kurs raqamini yuboring.");
@@ -205,34 +440,91 @@ async function handleSuperAdminCrudText(ctx) {
         return true;
     }
 
+    // -------- GURUH QO‘SHISH: GURUH NOMI --------
     if (current.step === "group_name") {
-        createGroup(current.directionId, current.course, text);
-        clearState(ctx.from.id);
-        await ctx.reply(`✅ Guruh qo‘shildi: ${text}`);
+        if (!text) {
+            await ctx.reply("❌ Guruh nomini yuboring.");
+            return true;
+        }
+
+        try {
+            createGroup(current.directionId, current.course, text);
+            clearState(ctx.from.id);
+            await ctx.reply(`✅ Guruh qo‘shildi: ${text}`);
+        } catch (e) {
+            clearState(ctx.from.id);
+            await ctx.reply("❌ Guruh qo‘shishda xatolik.");
+        }
+
         return true;
     }
 
+    // -------- ADMIN TAYINLASH --------
     if (current.step === "assign_admin_id") {
         if (!/^\d+$/.test(text)) {
             await ctx.reply("❌ Faqat Telegram ID yuboring.");
             return true;
         }
 
-        assignAdminToFaculty(Number(text), current.facultyId);
-        clearState(ctx.from.id);
-        await ctx.reply(`✅ ${text} admin qilindi.`);
+        try {
+            assignAdminToFaculty(Number(text), current.facultyId);
+            clearState(ctx.from.id);
+            await ctx.reply(`✅ ${text} admin qilindi.`);
+        } catch (e) {
+            clearState(ctx.from.id);
+            await ctx.reply("❌ Admin tayinlashda xatolik.");
+        }
+
         return true;
     }
 
+    // -------- ADMINNI OLISH --------
     if (current.step === "remove_admin_id") {
         if (!/^\d+$/.test(text)) {
             await ctx.reply("❌ Faqat Telegram ID yuboring.");
             return true;
         }
 
-        removeAdminFromFaculty(Number(text), current.facultyId);
+        try {
+            removeAdminFromFaculty(Number(text), current.facultyId);
+            clearState(ctx.from.id);
+            await ctx.reply(`✅ ${text} adminlikdan olindi.`);
+        } catch (e) {
+            clearState(ctx.from.id);
+            await ctx.reply("❌ Adminni olishda xatolik.");
+        }
+
+        return true;
+    }
+
+    // -------- GURUHNI O‘CHIRISH: KURS --------
+    if (current.step === "delete_group_course") {
+        if (!/^\d+$/.test(text)) {
+            await ctx.reply("❌ Kurs raqamini yuboring.");
+            return true;
+        }
+
+        const groups = db.prepare(`
+            SELECT id, group_name
+            FROM groups
+            WHERE direction_id = ? AND course = ?
+            ORDER BY group_name
+        `).all(current.directionId, Number(text));
+
         clearState(ctx.from.id);
-        await ctx.reply(`✅ ${text} adminlikdan olindi.`);
+
+        if (!groups.length) {
+            await ctx.reply("❌ Bu kursda guruh topilmadi.");
+            return true;
+        }
+
+        const buttons = groups.map((g) => [
+            Markup.button.callback(`🗑 ${g.group_name}`, `delete_group_${g.id}`)
+        ]);
+
+        await ctx.reply("🗑 O‘chiriladigan guruhni tanlang:", {
+            ...Markup.inlineKeyboard(buttons)
+        });
         return true;
     }
 
@@ -241,8 +533,11 @@ async function handleSuperAdminCrudText(ctx) {
 
 module.exports = {
     startFacultyCreate,
+    startFacultyDelete,
     startDirectionCreate,
+    startDirectionDelete,
     startGroupCreate,
+    startGroupDelete,
     startAdminAssign,
     startAdminRemove,
     handleSuperAdminCrudCallback,
