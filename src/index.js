@@ -65,6 +65,7 @@ bot.hears("👑 Super Admin panel", superAdminPanel);
 
 bot.hears("📢 Fakultet e'loni", askFacultyAnnouncement);
 bot.hears("📢 Global xabar", askGlobalBroadcast);
+bot.hears("📊 Statistika", showStats);
 bot.hears("📊 To‘liq statistika", showStats);
 bot.hears("👥 Adminlar ro‘yxati", showAdminsList);
 bot.hears("➕ Admin qo‘shish", startAddAdmin);
