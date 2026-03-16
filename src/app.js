@@ -1,29 +1,30 @@
 const { Telegraf } = require("telegraf");
 
 const startHandler = require("./handlers/startHandler");
+const studentHandler = require("./handlers/studentHandler");
 const adminHandler = require("./handlers/adminHandler");
-const userHandler = require("./handlers/userHandler");
 const superAdminCrudHandler = require("./handlers/superAdminCrudHandler");
+const textRouter = require("./handlers/textRouter");
+const callbackHandler = require("./handlers/callbackHandler");
 
 function createBotApp() {
     const bot = new Telegraf(process.env.BOT_TOKEN);
 
-    // commands
     bot.start(startHandler);
     bot.command("admin", adminHandler.adminPanel);
     bot.command("superadmin", adminHandler.superAdminPanel);
 
-    // student menu
-    bot.hears("👥 Guruhingizni tanlang", userHandler.handleChooseMyGroup);
-    bot.hears("🔁 Guruhni almashtirish", userHandler.handleChooseMyGroup);
-    bot.hears("👤 Mening guruhim", userHandler.handleMyGroup);
-    bot.hears("📚 Jadvalni ko‘rish", userHandler.handleStudentSchedule);
-    bot.hears("👨‍🏫 O‘qituvchini qidirish", userHandler.handleTeacherScheduleStart);
-    bot.hears("📅 Bugungi jadval", userHandler.handleTodaySchedule);
-    bot.hears("🗓 Haftalik jadval", userHandler.handleWeeklySchedule);
-    bot.hears("ℹ️ Yordam", userHandler.handleHelp);
+    // student
+    bot.hears("👥 Guruhingizni tanlang", studentHandler.chooseGroup);
+    bot.hears("🔁 Guruhni almashtirish", studentHandler.chooseGroup);
+    bot.hears("👤 Mening guruhim", studentHandler.myGroup);
+    bot.hears("📚 Jadvalni ko‘rish", studentHandler.viewSchedule);
+    bot.hears("👨‍🏫 O‘qituvchini qidirish", studentHandler.teacherSearchStart);
+    bot.hears("📅 Bugungi jadval", studentHandler.todaySchedule);
+    bot.hears("🗓 Haftalik jadval", studentHandler.weeklySchedule);
+    bot.hears("ℹ️ Yordam", studentHandler.help);
 
-    // admin menu
+    // admin
     bot.hears("⚙️ Admin panel", adminHandler.adminPanel);
     bot.hears("📤 Excel yuklash", async (ctx) => {
         if (!adminHandler.isAdmin(ctx)) {
@@ -34,7 +35,7 @@ function createBotApp() {
     bot.hears("📥 Excel template", adminHandler.sendExcelTemplate);
     bot.hears("📢 Fakultet e'loni", adminHandler.askFacultyAnnouncement);
 
-    // super admin menu
+    // super admin
     bot.hears("👑 Super Admin panel", adminHandler.superAdminPanel);
     bot.hears("🏛 Fakultet qo‘shish", superAdminCrudHandler.startFacultyCreate);
     bot.hears("🗑 Fakultetni o‘chirish", superAdminCrudHandler.startFacultyDelete);
@@ -50,42 +51,11 @@ function createBotApp() {
     bot.hears("📊 To‘liq statistika", adminHandler.showStats);
     bot.hears("📢 Global xabar", adminHandler.askGlobalBroadcast);
 
-    // common
     bot.hears("🏠 Bosh menyu", startHandler);
 
-    // files
     bot.on("document", adminHandler.handleExcelUpload);
-
-    // text router
-    bot.on("text", async (ctx, next) => {
-        const handledSuperAdminCrud = await superAdminCrudHandler.handleSuperAdminCrudText(ctx);
-        if (handledSuperAdminCrud) return;
-
-        const handledAdminManage = await adminHandler.handleAdminAddRemoveText(ctx);
-        if (handledAdminManage) return;
-
-        const handledFacultyBroadcast = await adminHandler.handleFacultyBroadcastText(ctx);
-        if (handledFacultyBroadcast) return;
-
-        const handledGlobalBroadcast = await adminHandler.handleGlobalBroadcastText(ctx);
-        if (handledGlobalBroadcast) return;
-
-        const handledTeacherSearch = await userHandler.handleTeacherSearchText(ctx);
-        if (handledTeacherSearch) return;
-
-        return next();
-    });
-
-    // callback router
-    bot.on("callback_query", async (ctx) => {
-        const handledSuperCrud = await superAdminCrudHandler.handleSuperAdminCrudCallback(ctx);
-        if (handledSuperCrud) return;
-
-        const handledAdmin = await adminHandler.handleAdminCallback(ctx);
-        if (handledAdmin) return;
-
-        return userHandler.handleCallback(ctx);
-    });
+    bot.on("text", textRouter);
+    bot.on("callback_query", callbackHandler);
 
     return { bot };
 }

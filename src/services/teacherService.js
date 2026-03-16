@@ -6,26 +6,22 @@ function searchTeachersByName(query) {
         FROM teachers
         WHERE full_name LIKE ?
         ORDER BY full_name
+            LIMIT 20
     `).all(`%${query}%`);
 }
 
 function getTeacherSchedule(teacherId) {
     return db.prepare(`
         SELECT
-            s.day,
-            s.lesson_number,
-            s.start_time,
-            s.end_time,
-            s.subject,
-            s.room,
-            s.building,
-            s.week_type,
+            s.*,
             g.group_name,
             g.course,
-            d.name AS direction_name
+            d.name AS direction_name,
+            f.name AS faculty_name
         FROM schedules s
                  LEFT JOIN groups g ON g.id = s.group_id
                  LEFT JOIN directions d ON d.id = g.direction_id
+                 LEFT JOIN faculties f ON f.id = d.faculty_id
         WHERE s.teacher_id = ?
         ORDER BY
             CASE s.day

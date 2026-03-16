@@ -49,11 +49,9 @@ CREATE TABLE IF NOT EXISTS users (
                                      direction_id INTEGER,
                                      course INTEGER,
                                      group_id INTEGER,
-                                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                                     FOREIGN KEY(faculty_id) REFERENCES faculties(id),
-    FOREIGN KEY(direction_id) REFERENCES directions(id),
-    FOREIGN KEY(group_id) REFERENCES groups(id)
-    );
+                                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS roles (
                                      id INTEGER PRIMARY KEY AUTOINCREMENT,
                                      telegram_id INTEGER UNIQUE NOT NULL,
@@ -64,6 +62,13 @@ CREATE TABLE IF NOT EXISTS admin_faculties (
                                                id INTEGER PRIMARY KEY AUTOINCREMENT,
                                                telegram_id INTEGER NOT NULL,
                                                faculty_id INTEGER NOT NULL,
-                                               UNIQUE(telegram_id, faculty_id),
-    FOREIGN KEY(faculty_id) REFERENCES faculties(id)
+                                               UNIQUE(telegram_id, faculty_id)
     );
+
+CREATE TABLE IF NOT EXISTS stats (
+                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                     telegram_id INTEGER,
+                                     action TEXT NOT NULL,
+                                     meta TEXT,
+                                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

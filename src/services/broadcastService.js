@@ -1,17 +1,15 @@
 const { getAllUsers } = require("./userService");
 
-async function broadcastToAll(bot, message) {
+async function broadcastToAll(ctx, text) {
     const users = getAllUsers();
     let sent = 0;
     let failed = 0;
 
     for (const user of users) {
         try {
-            await bot.telegram.sendMessage(user.telegram_id, message, {
-                parse_mode: "Markdown"
-            });
+            await ctx.telegram.sendMessage(user.telegram_id, text, { parse_mode: "Markdown" });
             sent++;
-        } catch (error) {
+        } catch (e) {
             failed++;
         }
     }
